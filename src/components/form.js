@@ -16,15 +16,22 @@ constructor(props){
       services: [],
       barbers:[],
       fullDay:false,
-      noBarberD:[]
+      noBarberD:[],
+      freeHours:[
+          {id: '1', value: 'first available'},
+          {id: '2', value: 'second available'},
+          {id: '3', value: 'third available'}
+        ],
+      selectedHour:''
   };
   this.onSubmit = this.onSubmit.bind(this);
-  this.getData = this.getData.bind(this);
+  //this.getData = this.getData.bind(this);
   this.onChangeDate = this.onChangeDate.bind(this);
   this.onChangeService = this.onChangeService.bind(this);
   this.calcAppointment = this.calcAppointment.bind(this);
 }
-getData = async () => {
+async componentWillMount(){
+    this.setState({loading: true});
     const wHours = await axios.get('http://127.0.0.1:5000/workHours')
     const workHours = await wHours.data
     this.setState({ workHours });
@@ -40,7 +47,9 @@ getData = async () => {
     const barberss = await axios.get('http://127.0.0.1:5000/barbers')
     const barbers = await barberss.data
     this.setState({ barbers });
-  }
+    this.setState({loading: false});
+}
+
 calcAppointment() {
     const bookedArr = [];
     const noBarberDays = [];
@@ -59,7 +68,7 @@ calcAppointment() {
             var earlyBreakEnd = moment(`1970-01-01 ${this.state.barbers[0].workHours[0].lunchTime.startHour}:30`).format('HH:mm');
             }
         if(i>3){
-            noBarberDays.push({days: i });
+            noBarberDays.push(i);
             }
 };
     if(i>5){
@@ -67,7 +76,7 @@ calcAppointment() {
     var closeDate = moment(`1970-01-01 ${this.state.workHours[5].endHour}:00`).format('HH:mm');
     var close2 =  moment(`1970-01-01 ${this.state.workHours[1].endHour}:00`).format('HH:mm');
         if(i<=8){
-            noBarberDays.push({days: i });
+            noBarberDays.push(i);
         }
         if(i>8){
             var shiftStart = moment(`1970-01-01 ${this.state.barbers[0].workHours[4].startHour}:00`).format('HH:mm');
@@ -112,40 +121,32 @@ this.setState({ noBarberD: noBarberDays }, function () {
 }); 
  }
   onChangeDate(e) {
-    var currentD = moment().format('DD.MM.YYYY')
     var firstParse = moment(e.target.value).format('DD.MM.YYYY');
-    if(firstParse >= currentD){
     this.setState({ inputDate: firstParse }, function () {
         console.log(this.state.inputDate);
-   });
-   //var barbersFirstDay = moment().set({'year': 2020, 'month': 2, 'day': 1}).format('YYYY MM DD');
-   //var test = barbersFirstDay.diff(firstParse, 'days');
-   var WorkedTillNow = barbersFirstDay;
-   var barbersFirstDay = moment("01.02.2020", "DD.MM.YYYY");
+   }); 
+   var barbersFirstDay = moment("03.02.2020", "DD.MM.YYYY");
    var clientSelectedDate = moment(firstParse, "DD.MM.YYYY");
-   var diffInDays = 'Diff: ' + barbersFirstDay.diff(clientSelectedDate, 'days');
-   //IMPLEMENTIRAJ DELJENJE
-   console.log(diffInDays);   // =1
-/*    for(var i=0;this.state.inputDate>WorkedTillNow;i++){
-    const found = this.state.noBarberD.find(element => element === i);
-    if(found===i){
-        this.setState({fullDay: true})
-        break;
+   function calcBusinessDays(startDate, endDate) { 
+    var day = moment(startDate);
+    var businessDays = 0;
+    while (day.isSameOrBefore(endDate,'day')) {
+      if (day.day()!=0 && day.day()!=6) businessDays++;
+      day.add(1,'d');
     }
-   WorkedTillNow = moment(WorkedTillNow).add(1, 'days').format('YYYY MM DD');
-   } */
-   console.log(this.state.fullDay);
+    return businessDays;
   }
-  else if(firstParse < currentD) {
-    e.target.value = null
-    //ADD USER WARNING WHEN PAST DATE
-  }
-
+  var diffInDays = calcBusinessDays(barbersFirstDay, clientSelectedDate); 
+  var Worked14D = Math.floor(diffInDays / 10); //10 days considerered 1 loop
+    var daysWorkedThisWeek = diffInDays % 10;
+    var barberAbsent = this.state.noBarberD.includes(daysWorkedThisWeek);
+    this.setState({fullDay: barberAbsent});
 }
   onChangeService(e) {
     this.setState({ inputService: e.target.value }, function () {
         console.log(this.state.inputService);
    });
+   console.log(this.state.selectedHour);
   }
 onSubmit(e) {
     e.preventDefault();
@@ -154,7 +155,6 @@ onSubmit(e) {
     }
 
   render() {
-      /* onChange={this.onChange} value={this.state.name} */
       const redirect = this.state.success;
       if (redirect === true) {
           return <Redirect to="/success" />
@@ -190,14 +190,14 @@ onSubmit(e) {
             </select>
           </div>
           <div>
-            <input type="date" name="date" required onChange={(e) => this.onChangeDate(e)} />
+            <input type="date" name="date" min={new Date().toISOString().split("T")[0]} required onChange={(e) => this.onChangeDate(e)} />
           </div>
           <div>
             <label>Time: </label><br />
-            <select type="time" name="time" required>
-            <option value="volvo">Volvo</option>
-            <option value="saab">Saab</option>
-            <option value="opel">Opel</option></select>
+            <select type="time" name="time" required value={this.state.selectedHour}
+              onChange={(e) => this.setState({selectedHour: e.target.value})}>
+            {this.state.freeHours.map((free) => <option key={free.id} value={free.value}>{free.value}</option>)}
+            </select>
           </div>
           <div>
             <label>Price: </label><br />
@@ -206,14 +206,6 @@ onSubmit(e) {
           <br />
           <button type="submit">Submit</button>
         </form>
-        
-         <button onClick={this.getData}>Submit</button>
-         <ul>
-        {this.state.workHours.map(w => <li key={w.startHour}>{w.startHour}</li>)}
-      </ul>
-      <ul>
-        {this.state.appointments.map(a => <li key={a.startDate}>{a.startDate}</li>)}
-      </ul>
       <button onClick={this.calcAppointment}>calc</button>
         </div>
     );
