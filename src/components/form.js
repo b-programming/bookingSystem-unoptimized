@@ -17,17 +17,14 @@ constructor(props){
       barbers:[],
       fullDay:false,
       noBarberD:[],
-      freeHours:[
-          {id: '1', value: 'first available'},
-          {id: '2', value: 'second available'},
-          {id: '3', value: 'third available'}
+      freeHours:[ {id:1}, {value: "choose date"}
         ],
       selectedHour:''
   };
   this.onSubmit = this.onSubmit.bind(this);
-  //this.getData = this.getData.bind(this);
   this.onChangeDate = this.onChangeDate.bind(this);
   this.onChangeService = this.onChangeService.bind(this);
+  this.onChangeTime = this.onChangeTime.bind(this);
   this.calcAppointment = this.calcAppointment.bind(this);
 }
 async componentWillMount(){
@@ -141,12 +138,22 @@ this.setState({ noBarberD: noBarberDays }, function () {
     var daysWorkedThisWeek = diffInDays % 10;
     var barberAbsent = this.state.noBarberD.includes(daysWorkedThisWeek);
     this.setState({fullDay: barberAbsent});
+    console.log(barberAbsent);
+    if(barberAbsent == true){
+        this.setState({ freeHours: [{id: 0, value: 'no apointments available'}] }, function () {
+            console.log(this.state.selectedHour);
+       });
+    }
 }
   onChangeService(e) {
     this.setState({ inputService: e.target.value }, function () {
         console.log(this.state.inputService);
    });
-   console.log(this.state.selectedHour);
+  }
+  onChangeTime(e){
+    this.setState({ selectedHour: e.target.value }, function () {
+        console.log(this.state.selectedHour);
+   });
   }
 onSubmit(e) {
     e.preventDefault();
@@ -195,7 +202,7 @@ onSubmit(e) {
           <div>
             <label>Time: </label><br />
             <select type="time" name="time" required value={this.state.selectedHour}
-              onChange={(e) => this.setState({selectedHour: e.target.value})}>
+              onChange={(e) => this.onChangeTime(e)}>
             {this.state.freeHours.map((free) => <option key={free.id} value={free.value}>{free.value}</option>)}
             </select>
           </div>
