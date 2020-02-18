@@ -1,5 +1,6 @@
 import React from 'react';
 import { Redirect } from "react-router-dom";
+import '../css/style.css';
 const axios = require('axios');
 const moment = require('moment');
 class Form extends React.Component {
@@ -8,9 +9,11 @@ constructor(props){
   this.state = {
       workHours: [],
       appointments: [],
-      selectedBarber:[],
+      selectedBarber:1,
       inputDate: {},
       inputService: [],
+      inputEmail:'',
+      inputNumber:'',
       booked: [],
       breaks: [],
       services: [],
@@ -21,7 +24,9 @@ constructor(props){
       bookedHours:[],
       openClose:[],
       selectedHour:'',
-      firstWeek: true
+      firstWeek: true,
+      price: 0,
+      loaded: false
   };
   this.onSubmit = this.onSubmit.bind(this);
   this.onChangeDate = this.onChangeDate.bind(this);
@@ -29,23 +34,25 @@ constructor(props){
   this.onChangeTime = this.onChangeTime.bind(this);
   this.calcAppointment = this.calcAppointment.bind(this);
 }
-async componentWillMount(){
-    const wHours = await axios.get('http://127.0.0.1:5000/workHours')
-    const workHours = await wHours.data
-    this.setState({ workHours });
-    
-    const appMents = await axios.get('http://127.0.0.1:5000/appointments')
-    const appointments = await appMents.data
-    this.setState({ appointments });
-
-    const servCes = await axios.get('http://127.0.0.1:5000/services')
-    const services = await servCes.data
-    this.setState({ services });
-
-    const barberss = await axios.get('http://127.0.0.1:5000/barbers')
-    const barbers = await barberss.data
-    this.setState({ barbers });
-}
+componentWillMount(){
+  //if(this.state.loaded !== true){
+      axios.all([
+        axios.get('http://127.0.0.1:5000/workHours'),
+        axios.get('http://127.0.0.1:5000/appointments'),
+        axios.get('http://127.0.0.1:5000/services'),
+        axios.get('http://127.0.0.1:5000/barbers')
+      ])
+      .then(responseArr => {
+        //this will be executed only when all requests are complete
+        this.setState({ workHours: responseArr[0].data }); 
+        this.setState({ appointments: responseArr[1].data }); 
+        this.setState({ services: responseArr[2].data }); 
+        this.setState({ barbers: responseArr[3].data });
+        this.setState({ loaded: true});
+        this.calcAppointment() 
+      });
+    }
+   // }
 
 calcAppointment() {
     const bookedArr = [];
@@ -80,9 +87,7 @@ if(openDate < shiftStart){openDate=shiftStart;}
 if(closeDate > shiftEnd){closeDate=shiftEnd;}
 openClose.push({from: openDate, to: closeDate });
 }
-this.setState({ openClose: openClose }, function () {
-  console.log("from to:", this.state.openClose);
-}); 
+this.setState({ openClose: openClose }); 
 
 this.state.appointments.forEach((appointment) => {
   bookedArr.push({from: appointment.startDate, service: appointment.serviceId });
@@ -100,14 +105,13 @@ var selectedDay = moment(this.state.inputDate).format('DD');
 var selectedMonth = moment(this.state.inputDate).format('MM');
 var alreadyBooked = bookedArr;
 var serviceTime = this.state.inputService;
-console.log( selectedDay, serviceTime, alreadyBooked);
 
-if(this.state.firstWeek == true){
+if(this.state.firstWeek === true){
   var earlyBreakStart = moment(`1970-01-01 ${this.state.barbers[0].workHours[0].lunchTime.startHour}:00`).format('HH:mm');
   var earlyBreakEnd = moment(`1970-01-01 ${this.state.barbers[0].workHours[0].lunchTime.startHour}:30`).format('HH:mm');
   bookedHours.push({from: earlyBreakStart, to: earlyBreakEnd});
 }
-if(this.state.firstWeek ==false){
+if(this.state.firstWeek === false){
   var earlyBreakStart = moment(`1970-01-01 ${this.state.barbers[0].workHours[4].lunchTime.startHour}:00`).format('HH:mm');
   var earlyBreakEnd = moment(`1970-01-01 ${this.state.barbers[0].workHours[4].lunchTime.startHour}:30`).format('HH:mm');
   bookedHours.push({from: earlyBreakStart, to: earlyBreakEnd});
@@ -118,17 +122,17 @@ alreadyBooked.forEach((booked) => {
     var appointmentDay = moment.unix(booked.from).format('DD');
     var appointmentHour = moment.unix(booked.from).format('HH:mm');
     arr.push({month: appointmentMonth, day: appointmentDay });
-    if(selectedMonth == appointmentMonth){
-    if(selectedDay == appointmentDay){
-      if(serviceTime.durationInMin == 20){
+    if(selectedMonth === appointmentMonth){
+    if(selectedDay === appointmentDay){
+      if(serviceTime.durationInMin === 20){
         var appointmentHourEnd = moment.unix(booked.from + 1200 ).format('HH:mm');
         bookedHours.push({from: appointmentHour, to: appointmentHourEnd });
       }
-      if(serviceTime.durationInMin == 30){
+      if(serviceTime.durationInMin === 30){
         var appointmentHourEnd = moment.unix(booked.from + 1800 ).format('HH:mm');
         bookedHours.push({from: appointmentHour, to: appointmentHourEnd });
       }
-      if(serviceTime.durationInMin == 50){
+      if(serviceTime.durationInMin === 50){
         var appointmentHourEnd = moment.unix(booked.from + 3000 ).format('HH:mm');
         bookedHours.push({from: appointmentHour, to: appointmentHourEnd });
       }
@@ -158,7 +162,7 @@ this.setState({ bookedHours: bookedHours }, function () {
     var day = moment(startDate);
     var businessDays = 0;
     while (day.isSameOrBefore(endDate,'day')) {
-      if (day.day()!=0 && day.day()!=6) businessDays++;
+      if (day.day()!==0 && day.day()!==6) businessDays++;
       day.add(1,'d');
     }
     return businessDays;
@@ -173,7 +177,7 @@ this.setState({ bookedHours: bookedHours }, function () {
   var freeHoursOnDay = [];
   this.setState({fullDay: barberAbsent});
   if(daysWorkedThisFiveDayWeek < 0){daysWorkedThisFiveDayWeek = 4;}
-  if(firstWeek == 0){
+  if(firstWeek === 0){
     this.setState({ firstWeek: false }, function () {
       console.log(this.state.firstWeek);
      });
@@ -201,7 +205,7 @@ this.setState({ bookedHours: bookedHours }, function () {
       }
       
   }
-  if(firstWeek == 1){
+  if(firstWeek === 1){
     this.setState({ firstWeek: true }, function () {
       console.log(this.state.firstWeek);
      });
@@ -212,7 +216,6 @@ this.setState({ bookedHours: bookedHours }, function () {
       var freeTime = finish.diff(start, 'm');
       var maxBooked = Math.floor(freeTime / durations);
       var startOfAppointment = moment(`1970-01-01 ${this.state.openClose[daysWorkedThisFiveDayWeek + 5].from}`);
-      console.log("max", maxBooked);
       
       for (var i = 1; i < maxBooked; i++) {
         var firstBreak = moment(`1970-01-01 ${this.state.bookedHours[0].from}`);
@@ -227,58 +230,76 @@ this.setState({ bookedHours: bookedHours }, function () {
       }
       }
   }
-  if(barberAbsent == true){
-    this.setState({ freeHours: [{id: 0, value: 'no apointments available'}] }, function () {
-        console.log(this.state.selectedHour);
-       });
+  if(barberAbsent === true){
+    this.setState({ freeHours: [{id: 0, value: 'no apointments available'}] });
     }
-    if(barberAbsent == false){
+    if(barberAbsent === false){
       var arr = [];
       for(var i=0;i<freeHoursOnDay.length;i++){
       arr.push({id:i, value: freeHoursOnDay[i]});
       }
-      console.log(arr);
-       this.setState({ freeHours: arr }, function () {
-        console.log(this.state.freeHours);
-       });
+       this.setState({ freeHours: arr });
     }
-    console.log(this.state.bookedHours, this.state.openClose);
 }
   onChangeService(e) {
     e.preventDefault();
     if(e.target.value == 1){
-      this.setState({ inputService: [{id: e.target.value, durationInMin: 20}] });
+      this.setState({ inputService: [{id: e.target.value, durationInMin: this.state.services[0].durationMinutes}] });
+      this.setState({ price: this.state.services[0].price });
     }
     if(e.target.value == 2){
-      this.setState({ inputService: [{id: e.target.value, durationInMin: 30}] });
+      this.setState({ inputService: [{id: e.target.value, durationInMin: this.state.services[1].durationMinutes}] });
+      this.setState({ price: this.state.services[1].price });
     }
     if(e.target.value == 3){
-      this.setState({ inputService: [{id: e.target.value, durationInMin: 50}] });
+      this.setState({ inputService: [{id: e.target.value, durationInMin: this.state.services[2].durationMinutes}] });
+      this.setState({ price: this.state.services[2].price });
     }
   }
   onChangeTime(e){
-    this.setState({ selectedHour: e.target.value }, function () {
-        console.log(this.state.selectedHour);
-   });
+    e.preventDefault();
+    this.setState({ selectedHour: e.target.value });
   }
   onBarberChange(e){
-    this.setState({ selectedBarber: e.target.value }, function () {
-      console.log(this.state.selectedBarber);
- });
+    this.setState({ selectedBarber:e.target.value});
+    if(e.target.value < 1){
+      this.setState({ selectedBarber: 1});
+    }
+  }
+  onChangeEmail(e){
+    e.preventDefault();
+    this.setState({ inputEmail: e.target.value });
+  }
+  onChangeNumber(e){
+    e.preventDefault();
+    this.setState({ inputNumber: e.target.value });
+  }
+  validateEmail(){
+   var email = this.state.inputEmail;
+   var re = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/;
+   var validated = re.test(email);
+   return validated
+  }
+  validateNumber(){
+  var number = this.state.inputNumber;
+  var re = /^(\+)([386]{3})\s*(\d{2})\s*(\d{3})\s*(\d{3})$/;
+  var validated = re.test(number);
+  return validated
   }
 
 onSubmit(e) {
     e.preventDefault();
-    console.log(this.state.selectedBarber);
+    var validatedEmail = this.validateEmail();
+    var validatedNumber = this.validateNumber();
     var string = this.state.inputDate.split(/\D/);
     string = string[0] + "-" + string[1] + "-" + string[2];
     var dateString = moment(`${string} ${this.state.selectedHour}`, 'DD-MM-YYYY HH:mm');
     var epox = moment(dateString).unix();
-
+    if(validatedEmail === true && validatedNumber === true){
           axios.post(`http://127.0.0.1:5000/appointments`, {
             "startDate": epox,
-            "barberId": this.state.selectedBarber[0],
-            "serviceId": this.state.inputService[0].id
+            "barberId": this.state.selectedBarber,
+            "serviceId": this.state.inputService[0].id,
           })
 
           .then(response => {
@@ -289,7 +310,10 @@ onSubmit(e) {
             console.log(error);
           });
       }
-
+      else if(validatedEmail !== true) alert("Incorect email address format, email must be valid");
+      else if(validatedNumber !== true) alert("Incorect phone number, number must start with +386");
+      else alert("Incorect format, please check your inputs");
+    }
 
   render() {
       const redirect = this.state.success;
@@ -297,56 +321,56 @@ onSubmit(e) {
           return <Redirect to="/success" />
       }
     return (
-      <div>
-        <h1>Form</h1>
+      <div id="parentContainer">
+      <div id="Pagecontainer">
+        <h1>Book Your Barber</h1>
+        <h2>Great Hair Doesn’t Happen By Chance. It Happens By Appointment! <br /> So, Don't Wait And Book Your Appointment Now!</h2>
+       <div id="heroImg">
+       <div id="form">
         <form onSubmit={(e) => this.onSubmit(e)}>
-          <div>
-            <input type="text" name="Fname" placeholder="First name: " required onFocus={this.calcAppointment}/>
-          </div>
-          <div>
+          <h2>Book Your Appointment</h2>
+          <div id="inputs">
+          <div className="inpt">
+            <input type="text" name="Fname" placeholder="First name: " required/>
             <input type="text" name="Lname" placeholder="Last name: " required/>
+          </div><br/>
+          <div className="inpt">
+            <input type="text" name="email" placeholder="Email: "required onChange={(e) => this.onChangeEmail(e)}/>
+            <input type="text" name="number" placeholder="Contact number: " required onChange={(e) => this.onChangeNumber(e)}/>
           </div>
-          <div>
-            <input type="text" name="email" placeholder="Email: "required/>
-          </div>
-          <div>
-            <input type="text" name="number" placeholder="Contact number: " required/>
-          </div>
-          <div>
-            <label>Barber: </label><br />
+          <div className="inpt">
             <select type="text" name="barber" onChange={(e) => this.onBarberChange(e)} required>
-                <option value="1">Jože Britvica</option>
+            <option value="" disabled selected>Barber: </option>
+            <option  value="1">Jože Britvica</option>
             </select>
-          </div>
-          <div>
-            <label>Service: </label><br />
             <select type="text" name="service" required onChange={(e) => this.onChangeService(e)}>
+            <option value="" disabled selected>Service: </option>
             <option value="1">Shave</option>
             <option value="2">Haircut</option>
             <option value="3">Shave and Haircut</option>
             </select>
           </div>
-          <div>
+          <div className="inpt">
             <input type="date" name="date" min={new Date().toISOString().split("T")[0]} required onChange={(e) => this.onChangeDate(e)} />
-          </div>
-          <div>
-            <label>Time: </label><br />
             <select type="time" name="time" required value={this.state.selectedHour}
               onChange={(e) => this.onChangeTime(e)}>
+                <option value="" disabled selected>Time: </option>
             {this.state.freeHours.map((free) => <option key={free.id} value={free.value}>{free.value}</option>)}
             </select>
           </div>
-          <div>
-            <label>Price: </label><br />
-            <input type="number" name="price" required/>
+          <div className="inpt">
+            <input type="number" name="price" disabled="disabled" value ={ this.state.price} required/>
           </div>
-          <br />
-          <div>
+          <div className="inpt">
           <button type="submit">Submit</button>
+          </div>
           </div>
 
         </form>
-      <button onClick={this.calcAppointment}>calc</button>
+        </div>
+
+       </div>
+        </div>
         </div>
     );
   }

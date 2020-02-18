@@ -1,7 +1,6 @@
 import React from 'react';
 import FormComponent from './components/form'
 import Submit from './components/submit'
-import './App.css';
 import {
   BrowserRouter as Router,
   Switch,
