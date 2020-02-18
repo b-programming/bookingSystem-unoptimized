@@ -8,6 +8,7 @@ constructor(props){
   this.state = {
       workHours: [],
       appointments: [],
+      selectedBarber:[],
       inputDate: {},
       inputService: [],
       booked: [],
@@ -260,11 +261,35 @@ this.setState({ bookedHours: bookedHours }, function () {
         console.log(this.state.selectedHour);
    });
   }
+  onBarberChange(e){
+    this.setState({ selectedBarber: e.target.value }, function () {
+      console.log(this.state.selectedBarber);
+ });
+  }
+
 onSubmit(e) {
     e.preventDefault();
-    console.log(e);
-    this.setState({success: true})
-    }
+    console.log(this.state.selectedBarber);
+    var string = this.state.inputDate.split(/\D/);
+    string = string[0] + "-" + string[1] + "-" + string[2];
+    var dateString = moment(`${string} ${this.state.selectedHour}`, 'DD-MM-YYYY HH:mm');
+    var epox = moment(dateString).unix();
+
+          axios.post(`http://127.0.0.1:5000/appointments`, {
+            "startDate": epox,
+            "barberId": this.state.selectedBarber[0],
+            "serviceId": this.state.inputService[0].id
+          })
+
+          .then(response => {
+            console.log(response);
+            this.setState({ success:true });
+          })
+          .catch( error=> {
+            console.log(error);
+          });
+      }
+
 
   render() {
       const redirect = this.state.success;
@@ -274,9 +299,9 @@ onSubmit(e) {
     return (
       <div>
         <h1>Form</h1>
-        <form onSubmit={this.onSubmit}>
+        <form onSubmit={(e) => this.onSubmit(e)}>
           <div>
-            <input type="text" name="Fname" placeholder="First name: " required />
+            <input type="text" name="Fname" placeholder="First name: " required onFocus={this.calcAppointment}/>
           </div>
           <div>
             <input type="text" name="Lname" placeholder="Last name: " required/>
@@ -289,8 +314,8 @@ onSubmit(e) {
           </div>
           <div>
             <label>Barber: </label><br />
-            <select type="text" name="barber" required>
-                <option value="Jože Britvica">Jože Britvica</option>
+            <select type="text" name="barber" onChange={(e) => this.onBarberChange(e)} required>
+                <option value="1">Jože Britvica</option>
             </select>
           </div>
           <div>
@@ -316,7 +341,10 @@ onSubmit(e) {
             <input type="number" name="price" required/>
           </div>
           <br />
+          <div>
           <button type="submit">Submit</button>
+          </div>
+
         </form>
       <button onClick={this.calcAppointment}>calc</button>
         </div>
