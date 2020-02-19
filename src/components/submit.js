@@ -1,5 +1,7 @@
 import React, {useState, useEffect} from 'react';
+import '../css/style.css';
 const axios = require('axios');
+
 
 const Success = () => {
     const [data, updateData] = useState();
@@ -15,8 +17,8 @@ const Success = () => {
   
 return( 
 <div>
-<h2>Appointment successfully booked</h2>
-<img src={data} alt="gif" />
+<h2 id="booked">Appointment successfully booked</h2>
+<img id="gif" src={data} alt="gif" />
 </div>
 );
 }

@@ -1,5 +1,49 @@
 $font-stack: Squada One, Roboto Slab;
 
+@media(max-width: 520px){
+
+
+    #Pagecontainer{
+        height:auto!important;
+        min-height: 100vh!important;
+        flex-wrap:wrap;
+    }
+    #heroImg {
+        margin-right: auto!important;
+        margin-left: auto !important;
+        background-position: top!important;
+        height: auto !important;
+        min-height: 115vh;
+        width: 82vw!important;
+        margin-top: 2.6%!important;
+    }
+    #form{
+        margin-top: 49vh!important;
+        margin-left: 0px!important;
+        margin-right:0px!important;
+        flex-wrap: wrap!important;
+        height:100vh!important;
+    }
+    body{overflow:auto!important;}
+    .inpt{flex-wrap:wrap!important;}
+
+    .inpt input, .inpt select{
+      width:90%!important;
+    }
+    .App h1, .App h2{
+        width: 80%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .inputs{
+        height:80%!important;
+    }
+    #second{
+        display:none;
+    }
+}
+
+
 * {
 box-sizing: border-box;
  margin:0;
@@ -9,7 +53,8 @@ body {
     overflow: hidden;
 } 
 #parentContainer{
-    height: 100vh;
+    min-height: 100vh;
+    height:auto;
     width: 100vw;
 }
 #Pagecontainer{
@@ -59,9 +104,14 @@ body {
     margin-left: 36vw;
     justify-content: center;
     align-items: center;
-    background-color: blue;
+    background-color: midnightblue;
+    color: white;
     z-index: 20;
-}
+    font-family: Roboto Slab;
+    size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.6px;
+} 
 #form h2{
     font-family: Squada One;
     font-size: 37px;
@@ -89,6 +139,7 @@ body {
 .inpt input, .inpt select{
   width:40%;
   height: 50%;
+  margin-bottom:1%;
 }
 #inputs{
     height: 80%;
@@ -100,4 +151,21 @@ body {
 }
 .App h1, .App h2{
     text-align:center;
+}
+#btn{
+    border-radius: 20px;
+    width: 90%;
+    height: 44px;
+    background: orangered;
+    color: white; 
+}
+#booked{
+    font-family: Squada One;
+     font-size: 37px;
+     font-weight: 500;
+    letter-spacing: 1.8px; 
+}
+#gif{
+    display: block; 
+    margin: auto;
 }
