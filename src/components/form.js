@@ -1,16 +1,19 @@
 import React from 'react';
 import { Redirect } from "react-router-dom";
+import '../css/style.css';
 const axios = require('axios');
 const moment = require('moment');
 class Form extends React.Component {
 constructor(props){
   super(props);
   this.state = {
-      workHours: [],
+ workHours: [],
       appointments: [],
-      selectedBarber:[],
+      selectedBarber:1,
       inputDate: {},
       inputService: [],
+      inputEmail:'',
+      inputNumber:'',
       booked: [],
       breaks: [],
       services: [],
@@ -21,7 +24,9 @@ constructor(props){
       bookedHours:[],
       openClose:[],
       selectedHour:'',
-      firstWeek: true
+      firstWeek: true,
+      price: 0,
+      loaded: false
   };
   this.onSubmit = this.onSubmit.bind(this);
   this.onChangeDate = this.onChangeDate.bind(this);
@@ -29,22 +34,24 @@ constructor(props){
   this.onChangeTime = this.onChangeTime.bind(this);
   this.calcAppointment = this.calcAppointment.bind(this);
 }
-async componentWillMount(){
-    const wHours = await axios.get('http://127.0.0.1:5000/workHours')
-    const workHours = await wHours.data
-    this.setState({ workHours });
-    
-    const appMents = await axios.get('http://127.0.0.1:5000/appointments')
-    const appointments = await appMents.data
-    this.setState({ appointments });
-
-    const servCes = await axios.get('http://127.0.0.1:5000/services')
-    const services = await servCes.data
-    this.setState({ services });
-
-    const barberss = await axios.get('http://127.0.0.1:5000/barbers')
-    const barbers = await barberss.data
-    this.setState({ barbers });
+componentWillMount(){
+//load only once condition
+  if(this.state.loaded !== true){
+      axios.all([
+        axios.get('http://127.0.0.1:5000/workHours'),
+        axios.get('http://127.0.0.1:5000/appointments'),
+        axios.get('http://127.0.0.1:5000/services'),
+        axios.get('http://127.0.0.1:5000/barbers')
+      ])
+      .then(responseArr => {
+        this.setState({ workHours: responseArr[0].data }); 
+        this.setState({ appointments: responseArr[1].data }); 
+        this.setState({ services: responseArr[2].data }); 
+        this.setState({ barbers: responseArr[3].data });
+        this.setState({ loaded: true});
+        this.calcAppointment() 
+      });
+    }
 }
 
 calcAppointment() {
@@ -296,59 +303,70 @@ onSubmit(e) {
       if (redirect === true) {
           return <Redirect to="/success" />
       }
+      if(this.state.loaded === true){ 
     return (
-      <div>
-        <h1>Form</h1>
+      <div id="parentContainer">
+      <div id="Pagecontainer">
+        <h1>Book Your Barber</h1>
+        <h2>Great Hair Doesn’t Happen By Chance. It Happens By Appointment!</h2>
+        <h2 id="second"> So, Don't Wait And Book Your Appointment Now!</h2>
+       <div id="heroImg">
+       <div id="form">
         <form onSubmit={(e) => this.onSubmit(e)}>
-          <div>
-            <input type="text" name="Fname" placeholder="First name: " required onFocus={this.calcAppointment}/>
-          </div>
-          <div>
+          <h2>Book Your Appointment</h2>
+          <div id="inputs">
+          <div className="inpt">
+            <input type="text" name="Fname" placeholder="First name: " required/>
             <input type="text" name="Lname" placeholder="Last name: " required/>
+          </div><br/>
+          <div className="inpt">
+            <input type="text" name="email" placeholder="Email: "required onChange={(e) => this.onChangeEmail(e)}/>
+            <input type="text" name="number" placeholder="Contact number: " required onChange={(e) => this.onChangeNumber(e)}/>
           </div>
-          <div>
-            <input type="text" name="email" placeholder="Email: "required/>
-          </div>
-          <div>
-            <input type="text" name="number" placeholder="Contact number: " required/>
-          </div>
-          <div>
-            <label>Barber: </label><br />
+          <div className="inpt">
             <select type="text" name="barber" onChange={(e) => this.onBarberChange(e)} required>
-                <option value="1">Jože Britvica</option>
+            <option value="" disabled selected>Barber: </option>
+            <option  value="1">Jože Britvica</option>
             </select>
-          </div>
-          <div>
-            <label>Service: </label><br />
             <select type="text" name="service" required onChange={(e) => this.onChangeService(e)}>
+            <option value="0" disabled>Service: </option>
             <option value="1">Shave</option>
             <option value="2">Haircut</option>
             <option value="3">Shave and Haircut</option>
             </select>
           </div>
-          <div>
+          <div className="inpt">
             <input type="date" name="date" min={new Date().toISOString().split("T")[0]} required onChange={(e) => this.onChangeDate(e)} />
-          </div>
-          <div>
-            <label>Time: </label><br />
-            <select type="time" name="time" required value={this.state.selectedHour}
+            <select type="time" name="time" value={this.state.selectedHour}
               onChange={(e) => this.onChangeTime(e)}>
             {this.state.freeHours.map((free) => <option key={free.id} value={free.value}>{free.value}</option>)}
             </select>
           </div>
-          <div>
-            <label>Price: </label><br />
-            <input type="number" name="price" required/>
+          <div className="inpt">
+            <input type="number" name="price" disabled="disabled" value ={ this.state.price} required/>
           </div>
-          <br />
-          <div>
-          <button type="submit">Submit</button>
+          <div className="inpt">
+          <button id="btn" type="submit">Submit</button>
+          </div>
           </div>
 
         </form>
-      <button onClick={this.calcAppointment}>calc</button>
+        </div>
+
+       </div>
+        </div>
         </div>
     );
+    }
+     else{
+      return(
+        <div>
+        <h2>Fetching data, please wait</h2>
+        </div>
+
+      );
+    } 
   }
 }
+
 export default Form;
